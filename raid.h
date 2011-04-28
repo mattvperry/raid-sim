@@ -1,5 +1,5 @@
 /**
- * Raid File Server Simulation
+ * RAID File Server Farm Simulation
  *
  * FILE: raid.c
  * AUTHOR: Matt Perry
