@@ -5,7 +5,7 @@ SET(raid_srcs
         raid-extern.h
         raid-types.h
         raid.c
-        raid-global.c
+        raid-globals.c
         raid-controller.c
         raid-server.c
         raid-disk.c
