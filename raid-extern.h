@@ -29,12 +29,6 @@ extern void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* 
 extern void raid_disk_eventhandler_rc( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
 extern void raid_disk_finish( DiskState* s, tw_lp* lp );
 
-/* raid-nic.c */
-extern void raid_nic_init( NicState* s, tw_lp* lp );
-extern void raid_nic_eventhandler( NicState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
-extern void raid_nic_eventhandler_rc( NicState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
-extern void raid_nic_finish( NicState* s, tw_lp* lp );
-
 /* raid-globals.c */
 extern int g_disk_distro;
 

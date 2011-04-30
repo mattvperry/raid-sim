@@ -15,6 +15,9 @@
 #define MAX_HOURS 43800 // 5 years
 #define MTTF 1000000    // 1M hours
 
+#define CONT_PER_FS 4   // 4 controllers per file server
+#define DISK_PER_RC 8   // 8 disks per raid controller
+
 /* typedef */
 typedef struct _server_state ServerState;
 typedef struct _controller_state ContState;
@@ -44,6 +47,8 @@ struct _message_data
 /* raid-server.c */
 struct _server_state
 {
+    tw_lpid m_nic;
+    tw_lpid m_controllers[CONT_PER_FS];
     int num_controllers_good_health;
     int num_controllers_rebuilding;
     int num_controllers_failure;
@@ -59,6 +64,8 @@ enum _controller_condition
 
 struct _controller_state
 {
+    tw_lpid m_server;
+    tw_lpid m_disks[DISK_PER_RC];
     ContCondition condition;
     int num_rebuilds;
 };
@@ -66,14 +73,8 @@ struct _controller_state
 /* raid-disk.c */
 struct _disk_state
 {
+    tw_lpid m_controller;
     int num_failures;
-};
-
-/* raid-nic.c */
-struct _nic_state
-{
-    int throttled;
-    int bandwidth;
 };
 
 #endif
