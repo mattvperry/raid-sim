@@ -11,6 +11,9 @@
 
 #include "raid.h"
 
+/* raid.c */
+void message_error( Event event_type );
+
 /* raid-server.c */
 extern void raid_server_init( ServerState* s, tw_lp* lp );
 extern void raid_server_eventhandler( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
@@ -28,6 +31,13 @@ extern void raid_disk_init( DiskState* s, tw_lp* lp );
 extern void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
 extern void raid_disk_eventhandler_rc( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
 extern void raid_disk_finish( DiskState* s, tw_lp* lp );
+
+/* raid-io.c */
+extern void raid_io_gen_send( tw_lpid dest, Event next_event_type, tw_stime this_event_length, tw_lp* lp );
+extern void raid_io_init( IOState* s, tw_lp* lp );
+extern void raid_io_eventhandler( IOState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
+extern void raid_io_eventhandler_rc( IOState* s, tw_bf* cv, MsgData* m, tw_lp* lp );
+extern void raid_io_finish( IOState* s, tw_lp* lp );
 
 /* raid-globals.c */
 extern int g_disk_distro;

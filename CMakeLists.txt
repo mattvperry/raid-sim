@@ -9,7 +9,7 @@ SET(raid_srcs
         raid-controller.c
         raid-server.c
         raid-disk.c
-        raid-nic.c
+        raid-io.c
 )
 
 ADD_EXECUTABLE(raid ${raid_srcs})
