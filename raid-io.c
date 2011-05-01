@@ -8,17 +8,17 @@
 #include "raid.h"
 
 // Helpers
-void raid_io_gen_send( tw_lpid dest, Event next_event_type, tw_stime this_event_length, tw_lp* lp )
+void raid_io_gen_send( tw_lpid dest, Event event_type, tw_stime event_length, tw_lp* lp )
 {
     // Start time of next event
-    tw_stime next_start_time = tw_now( lp ) + this_event_length;
+    tw_stime start_time = tw_now( lp ) + event_length;
 
     // Generate and send message to dest
-    tw_event* next_event = tw_event_new( dest, next_start_time, lp );
-    MsgData* next_message = (MsgData*)tw_event_data( next_event );
-    next_message->event_type = next_event_type;
-    next_message->rc.io_time = this_event_length;
-    tw_event_send( next_event );
+    tw_event* event = tw_event_new( dest, start_time, lp );
+    MsgData* message = (MsgData*)tw_event_data( event );
+    message->event_type = event_type;
+    message->rc.io_time = event_length;
+    tw_event_send( event );
 }
 
 // Initialize

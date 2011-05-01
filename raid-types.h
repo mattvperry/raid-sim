@@ -11,15 +11,25 @@
 
 #include "raid.h"
 
-/* constants */
-#define MAX_HOURS 43800 // 5 years
-#define MTTF 1000000    // 1M hours
+/* Disk */
+#define MAX_HOURS 157680000 // 5 years in seconds
+#define MTTF 3600000000     // 3.6B seconds (1M Hours)
 
-#define CONT_PER_FS 4   // 4 controllers per file server
-#define DISK_PER_RC 8   // 8 disks per raid controller
+/* LP */
+#define CONT_PER_FS 4       // 4 controllers per file server
+#define DISK_PER_RC 8       // 8 disks per raid controller
 
-#define IDLE_TIME 10    // Avg time per idle phase (IO)
-#define BUSY_TIME 100   // Avg time per busy phase (IO)
+/* IO */
+#define IDLE_TIME 10        // Avg time per idle phase (IO)
+#define BUSY_TIME 100       // Avg time per busy phase (IO)
+#define BLOCK_SIZE 4        // Block size in KB
+
+/* Bandwidth */
+#define CONT_FS_BW 8388608  // Controller Bandwidth in KB
+#define THROTTLE .25        // Percent to throttle bandwidth
+
+/* Controller */
+#define REBUILD_TIME 3600   // Time to rebuild a volume (1hr)
 
 /* typedef */
 typedef struct _io_state IOState;
@@ -49,6 +59,8 @@ enum _event
 struct _rc
 {
     tw_stime io_time;
+    tw_stime server_timestamp;
+    long server_blocks;
 };
 
 struct _message_data
@@ -75,7 +87,11 @@ struct _io_state
 /* raid-server.c */
 struct _server_state
 {
+    IOMode mode;
     tw_lpid m_controllers[CONT_PER_FS];
+    tw_stime mode_change_timestamp;
+    double bandwidth;
+    unsigned long long num_blocks_wr;
     int num_controllers_good_health;
     int num_controllers_rebuilding;
     int num_controllers_failure;
