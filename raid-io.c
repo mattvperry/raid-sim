@@ -8,16 +8,13 @@
 #include "raid.h"
 
 // Helpers
-void raid_io_gen_send( tw_lpid dest, Event event_type, tw_stime event_length, tw_lp* lp )
+void raid_io_gen_send( tw_lpid dest, Event event_type, tw_stime event_time, tw_lp* lp )
 {
-    // Start time of next event
-    tw_stime start_time = tw_now( lp ) + event_length;
-
     // Generate and send message to dest
-    tw_event* event = tw_event_new( dest, start_time, lp );
+    tw_event* event = tw_event_new( dest, event_time, lp );
     MsgData* message = (MsgData*)tw_event_data( event );
     message->event_type = event_type;
-    message->rc.io_time = event_length;
+    message->rc.io_time = event_time;
     tw_event_send( event );
 }
 
@@ -30,10 +27,9 @@ void raid_io_init( IOState* s, tw_lp* lp )
     s->ttl_idle = 0;
 
     // Initialize event handler
-    MsgData* init_msg = (MsgData*)malloc( sizeof( MsgData ) );
-    init_msg->event_type = IO_IDLE;
-    raid_io_eventhandler( s, NULL, init_msg, lp );
-    free( init_msg );
+    MsgData init_msg;
+    init_msg.event_type = IO_IDLE;
+    raid_io_eventhandler( s, NULL, &init_msg, lp );
 }
 
 // Event Handler

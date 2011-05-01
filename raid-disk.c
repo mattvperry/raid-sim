@@ -10,7 +10,12 @@
 // Initialize
 void raid_disk_init( DiskState* s, tw_lp* lp )
 {
-    
+    // Initialize state
+    // TODO: Initialize controller gid
+    s->num_failures = 0;
+
+    tw_bf init_bf;
+    raid_disk_eventhandler( s, &init_bf, NULL, lp );
 }
 
 // Event Handler
@@ -49,14 +54,31 @@ void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
             break;
 
         default:
-            printf( "Bad disk_distro setting (%d)..exiting\n", g_disk_distro );
-            exit( 1 );
+            printf( "Bad disk_distro setting (%d)\n", g_disk_distro );
+            exit( -1 );
+    }
+
+    if( ( tw_now( lp ) + fail_time ) < (tw_stime)MAX_HOURS )
+    {
+        // Generate and send messages
+        tw_event* event = tw_event_new( s->m_controller, fail_time, lp );
+        MsgData* fail_message = (MsgData*)tw_event_data( event );
+        fail_message->event_type = DISK_FAILURE;
+        tw_event_send( event );
+        tw_event_send( tw_event_new( lp->gid, fail_time, lp ) );
+
+        // Modify state
+        cv->c0 = 1;
+        s->num_failures++;
     }
 }
 
 // Reverse Event Handler
 void raid_disk_eventhandler_rc( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 {
+    tw_rand_reverse_unif( lp->rng );
+    if( cv->c0 )
+        s->num_failures--;
 }
 
 // Finish

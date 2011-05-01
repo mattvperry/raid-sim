@@ -8,13 +8,10 @@
 #include "raid.h"
 
 // Helpers
-void raid_controller_gen_send( tw_lpid dest, Event event_type, tw_stime event_length, tw_lp* lp )
+void raid_controller_gen_send( tw_lpid dest, Event event_type, tw_stime event_time, tw_lp* lp )
 {
-    // Schedule time
-    tw_stime start_time = tw_now( lp ) + event_length;
-
     // Generate and send message to dest
-    tw_event* event = tw_event_new( dest, start_time, lp );
+    tw_event* event = tw_event_new( dest, event_time, lp );
     MsgData* message = (MsgData*)tw_event_data( event );
     message->event_type = event_type;
     tw_event_send( event );
@@ -33,6 +30,8 @@ void raid_controller_init( ContState* s, tw_lp* lp )
 // Event Handler
 void raid_controller_eventhandler( ContState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 {
+    // Save the controller's initial condition
+    m->rc.controller_condition = s->condition;
     // Only handle events if the controller isnt dead
     if( s->condition != FAILED )
     {
@@ -73,6 +72,7 @@ void raid_controller_eventhandler( ContState* s, tw_bf* cv, MsgData* m, tw_lp* l
 // Reverse Event Handler
 void raid_controller_eventhandler_rc( ContState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 {
+    s->condition = m->rc.controller_condition;
 }
 
 // Finish

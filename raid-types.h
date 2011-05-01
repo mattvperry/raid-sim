@@ -36,7 +36,6 @@ typedef struct _io_state IOState;
 typedef struct _server_state ServerState;
 typedef struct _controller_state ContState;
 typedef struct _disk_state DiskState;
-typedef struct _nic_state NicState;
 typedef struct _rc RC;
 typedef struct _message_data MsgData;
 typedef enum _event Event;
@@ -53,20 +52,6 @@ enum _event
     RAID_FAILURE,
     DISK_FAILURE,
     DISK_REPLACED
-};
-
-/* message */
-struct _rc
-{
-    tw_stime io_time;
-    tw_stime server_timestamp;
-    long server_blocks;
-};
-
-struct _message_data
-{
-    Event event_type;
-    RC rc;
 };
 
 /* raid-io.c */
@@ -120,5 +105,21 @@ struct _disk_state
     tw_lpid m_controller;
     int num_failures;
 };
+
+/* message */
+struct _rc
+{
+    tw_stime io_time;
+    tw_stime server_timestamp;
+    long server_blocks;
+    ContCondition controller_condition;
+};
+
+struct _message_data
+{
+    Event event_type;
+    RC rc;
+};
+
 
 #endif
