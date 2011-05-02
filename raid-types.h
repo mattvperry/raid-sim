@@ -16,8 +16,10 @@
 #define MTTF 3600000000     // 3.6B seconds (1M Hours)
 
 /* LP */
+#define FS_PER_IO 1         // 1 IO forwarding node per file server
 #define CONT_PER_FS 4       // 4 controllers per file server
 #define DISK_PER_RC 8       // 8 disks per raid controller
+#define LPS_PER_FS ( 1 + FS_PER_IO + CONT_PER_FS + ( DISK_PER_RC * CONT_PER_FS ) )
 
 /* IO */
 #define IDLE_TIME 10        // Avg time per idle phase (IO)
@@ -30,6 +32,9 @@
 
 /* Controller */
 #define REBUILD_TIME 3600   // Time to rebuild a volume (1hr)
+
+/* Disk */
+#define REPLACE_TIME 600    // Time to physically replace disk (10m)
 
 /* typedef */
 typedef struct _io_state IOState;
@@ -51,7 +56,7 @@ enum _event
     REBUILD_FINISH,
     RAID_FAILURE,
     DISK_FAILURE,
-    DISK_REPLACED
+    DISK_REPLACED,
 };
 
 /* raid-io.c */
@@ -73,7 +78,6 @@ struct _io_state
 struct _server_state
 {
     IOMode mode;
-    tw_lpid m_controllers[CONT_PER_FS];
     tw_stime mode_change_timestamp;
     double bandwidth;
     unsigned long long num_blocks_wr;
@@ -94,7 +98,6 @@ enum _controller_condition
 struct _controller_state
 {
     tw_lpid m_server;
-    tw_lpid m_disks[DISK_PER_RC];
     ContCondition condition;
     int num_rebuilds;
 };

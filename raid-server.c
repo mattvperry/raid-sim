@@ -18,14 +18,14 @@ long raid_server_num_blocks( ServerState* s, tw_lp* lp )
 {
     double lambda = ( tw_now( lp ) - s->mode_change_timestamp ) * 
         ( s->bandwidth / BLOCK_SIZE );
-    return tw_rand_poisson( lp->rng, lambda );
+    //return tw_rand_poisson( lp->rng, lambda );
+    return (long)lambda;
 }
 
 // Initialize
 void raid_server_init( ServerState* s, tw_lp* lp )
 {
     // Initialize State
-    // TODO: Calculate the gids of the controllers
     s->mode = IDLE;
     s->mode_change_timestamp = tw_now( lp );
     s->num_blocks_wr = 0;
@@ -64,13 +64,13 @@ void raid_server_eventhandler( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* lp 
 
     // Recalculate bandwidth
     raid_server_calculate_bandwidth( s );
+    // Add to the blocks read/written count
+    if( m->event_type != IO_BUSY )
+        s->num_blocks_wr += m->rc.server_blocks = raid_server_num_blocks( s, lp );
     // Save current timestamp
     m->rc.server_timestamp = s->mode_change_timestamp;
     // Set new timestamp
     s->mode_change_timestamp = tw_now( lp );
-    // Add to the blocks read/written count
-    if( m->event_type != IO_BUSY )
-        s->num_blocks_wr += m->rc.server_blocks = raid_server_num_blocks( s, lp );
 }
 
 // Reverse Event Handler
@@ -116,4 +116,5 @@ void raid_server_eventhandler_rc( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* 
 // Finish
 void raid_server_finish( ServerState* s, tw_lp* lp )
 {
+    printf( "File server %d read/wrote %llu\n", lp->gid, s->num_blocks_wr );
 }

@@ -18,11 +18,16 @@ void raid_io_gen_send( tw_lpid dest, Event event_type, tw_stime event_time, tw_l
     tw_event_send( event );
 }
 
+tw_lpid raid_io_find_server( tw_lp* lp )
+{
+    return ( LPS_PER_FS * ( lp->gid / LPS_PER_FS ) ) + FS_PER_IO;
+}
+
 // Initialize
 void raid_io_init( IOState* s, tw_lp* lp )
 {
     // Initial State
-    s->m_server = 0; // TODO: Properly set fileserver from gid
+    s->m_server = raid_io_find_server( lp );
     s->ttl_busy = 0;
     s->ttl_idle = 0;
 

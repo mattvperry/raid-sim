@@ -17,12 +17,16 @@ void raid_controller_gen_send( tw_lpid dest, Event event_type, tw_stime event_ti
     tw_event_send( event );
 }
 
+tw_lpid raid_controller_find_server( tw_lp* lp )
+{
+    return ( LPS_PER_FS * ( lp->gid / LPS_PER_FS ) ) + FS_PER_IO;
+}
+
 // Initialize
 void raid_controller_init( ContState* s, tw_lp* lp )
 {
     // Initialize state
-    // TODO: Calculate server gid
-    // TODO: Calculate disk gids
+    s->m_server = raid_controller_find_server( lp );
     s->condition = HEALTHY;
     s->num_rebuilds = 0;
 }
@@ -61,7 +65,7 @@ void raid_controller_eventhandler( ContState* s, tw_bf* cv, MsgData* m, tw_lp* l
                 s->condition = HEALTHY;
 
                 // Generate and send message to the file server
-                raid_controller_gen_send( lp->gid, REBUILD_FINISH, 0, lp );
+                raid_controller_gen_send( s->m_server, REBUILD_FINISH, 0, lp );
                 break;
             default:
                 message_error( m->event_type );

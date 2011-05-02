@@ -7,19 +7,17 @@
  */
 #include "raid.h"
 
-// Initialize
-void raid_disk_init( DiskState* s, tw_lp* lp )
+// Helpers
+void raid_disk_gen_send( tw_lpid dest, Event event_type, tw_stime event_time, tw_lp* lp )
 {
-    // Initialize state
-    // TODO: Initialize controller gid
-    s->num_failures = 0;
-
-    tw_bf init_bf;
-    raid_disk_eventhandler( s, &init_bf, NULL, lp );
+    // Generate and send message to dest
+    tw_event* event = tw_event_new( dest, event_time, lp );
+    MsgData* message = (MsgData*)tw_event_data( event );
+    message->event_type = event_type;
+    tw_event_send( event );
 }
 
-// Event Handler
-void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
+tw_stime raid_disk_fail_time( tw_lp* lp )
 {
     tw_stime fail_time;
 
@@ -58,27 +56,71 @@ void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
             exit( -1 );
     }
 
-    if( ( tw_now( lp ) + fail_time ) < (tw_stime)MAX_HOURS )
-    {
-        // Generate and send messages
-        tw_event* event = tw_event_new( s->m_controller, fail_time, lp );
-        MsgData* fail_message = (MsgData*)tw_event_data( event );
-        fail_message->event_type = DISK_FAILURE;
-        tw_event_send( event );
-        tw_event_send( tw_event_new( lp->gid, fail_time, lp ) );
+    return fail_time;
+}
 
-        // Modify state
-        cv->c0 = 1;
-        s->num_failures++;
+tw_lpid raid_disk_find_controller( tw_lp* lp )
+{
+    tw_lpid rcid = ( ( lp->gid % LPS_PER_FS ) - ( 1 + CONT_PER_FS + FS_PER_IO ) ) / DISK_PER_RC;
+    return ( LPS_PER_FS * ( lp->gid / LPS_PER_FS ) ) + FS_PER_IO + 1 + rcid;
+}
+
+// Initialize
+void raid_disk_init( DiskState* s, tw_lp* lp )
+{
+    // Initialize state
+    s->m_controller = raid_disk_find_controller( lp );
+    s->num_failures = 0;
+
+    // Initialize event handler
+    MsgData init_msg;
+    tw_bf init_bf;
+    init_msg.event_type = DISK_REPLACED;
+    raid_disk_eventhandler( s, &init_bf, &init_msg, lp );
+}
+
+// Event Handler
+void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
+{
+    // Declare time variable
+    tw_stime time;
+    // Check message type
+    switch( m->event_type )
+    {
+        case DISK_FAILURE:
+            time = REPLACE_TIME; //TODO: Make random
+
+            // Generate and send messages
+            raid_disk_gen_send( s->m_controller, DISK_REPLACED, time, lp );
+            raid_disk_gen_send( lp->gid, DISK_REPLACED, time, lp );
+            break;
+        case DISK_REPLACED:
+            time = raid_disk_fail_time( lp );
+            if( ( tw_now( lp ) + time ) < (tw_stime)MAX_HOURS )
+            {
+                // Generate and send messages
+                raid_disk_gen_send( s->m_controller, DISK_FAILURE, time, lp );
+                raid_disk_gen_send( lp->gid, DISK_FAILURE, time, lp );
+
+                // Modify state
+                cv->c0 = 1;
+                s->num_failures++;
+            }
+            break;
+        default:
+            message_error( m->event_type );
     }
 }
 
 // Reverse Event Handler
 void raid_disk_eventhandler_rc( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 {
-    tw_rand_reverse_unif( lp->rng );
-    if( cv->c0 )
-        s->num_failures--;
+    if( m->event_type == DISK_REPLACED )
+    {
+        tw_rand_reverse_unif( lp->rng );
+        if( cv->c0 )
+            s->num_failures--;
+    }
 }
 
 // Finish
