@@ -100,7 +100,74 @@ int main( int argc, char** argv )
             tw_lp_settype( i * LPS_PER_FS + FS_PER_IO + 1 + CONT_PER_FS + j, &mylps[3] );
     }    
 
+    // Initialize stats
+    g_stats.ttl_disk_failures = 0;
+    g_stats.ttl_controller_rebuilds = 0;
+    g_stats.ttl_controller_failures = 0;
+    g_stats.ttl_blocks_wr = 0;
+    g_stats.ttl_idle_time = 0;
+    g_stats.ttl_busy_time = 0;
+
     tw_run();
+
+    // Aggregate stats
+    Stats agg_stats;
+    MPI_Reduce( &(g_stats.ttl_disk_failures),
+                &(agg_stats.ttl_disk_failures),
+                1,
+                MPI_INT,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+    MPI_Reduce( &(g_stats.ttl_controller_rebuilds),
+                &(agg_stats.ttl_controller_rebuilds),
+                1,
+                MPI_INT,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+    MPI_Reduce( &(g_stats.ttl_controller_failures),
+                &(agg_stats.ttl_controller_failures),
+                1,
+                MPI_INT,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+    MPI_Reduce( &(g_stats.ttl_blocks_wr),
+                &(agg_stats.ttl_blocks_wr),
+                1,
+                MPI_LONG_LONG,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+    MPI_Reduce( &(g_stats.ttl_idle_time),
+                &(agg_stats.ttl_idle_time),
+                1,
+                MPI_DOUBLE,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+    MPI_Reduce( &(g_stats.ttl_busy_time),
+                &(agg_stats.ttl_busy_time),
+                1,
+                MPI_DOUBLE,
+                MPI_SUM,
+                g_tw_masternode,
+                MPI_COMM_WORLD );
+
+    if( tw_ismaster() )
+    {
+        // Print stats
+        printf( "\n" );
+        printf( "Total disk failures: %d\n", agg_stats.ttl_disk_failures );
+        printf( "Total RAID rebuilds: %d\n", agg_stats.ttl_controller_rebuilds );
+        printf( "Total RAID failures: %d\n", agg_stats.ttl_controller_failures );
+        printf( "Total blocks read/written: %llu\n", agg_stats.ttl_blocks_wr );
+        printf( "Total time spent idling: %.2f\n", agg_stats.ttl_idle_time );
+        printf( "Total time spent reading/writing: %.2f\n", agg_stats.ttl_busy_time );
+        printf( "Total average throughput: %.5f\n", (agg_stats.ttl_blocks_wr / agg_stats.ttl_busy_time) );
+    }
+
     tw_end();
     return 0;
 }

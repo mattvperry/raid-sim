@@ -54,5 +54,6 @@ extern int g_nfs_per_pe;
 extern tw_lpid g_nlp_per_pe;
 extern int g_raid_start_events;
 extern int g_add_mem;
+extern Stats g_stats;
 
 #endif

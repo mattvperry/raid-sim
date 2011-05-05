@@ -49,14 +49,16 @@ void raid_io_eventhandler( IOState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
         case IO_BUSY:
             s->mode = BUSY;
             // Calculate the time to spend in BUSY mode
-            this_event_length = BUSY_TIME; // TODO: Make random
+            this_event_length = tw_rand_normal_sd( lp->rng, BUSY_TIME, 
+                        STD_DEV * BUSY_TIME, &(m->rc.rng_calls) );
             s->ttl_busy += this_event_length; 
             next_event_type = IO_IDLE;
             break;
         case IO_IDLE:
             s->mode = IDLE;
             // Calculate the time to spend in IDLE mode
-            this_event_length = IDLE_TIME; // TODO: Make random
+            this_event_length = tw_rand_normal_sd( lp->rng, IDLE_TIME, 
+                        STD_DEV * IDLE_TIME, &(m->rc.rng_calls) );
             s->ttl_idle += this_event_length; 
             next_event_type = IO_BUSY;
             break;
@@ -87,9 +89,15 @@ void raid_io_eventhandler_rc( IOState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
         default:
             message_error( m->event_type );
     }
+
+    int i;
+    for( i = 0; i < m->rc.rng_calls; ++i )
+        tw_rand_reverse_unif( lp->rng );
 }
 
 // Finish
 void raid_io_finish( IOState* s, tw_lp* lp )
 {
+    g_stats.ttl_idle_time += s->ttl_idle;
+    g_stats.ttl_busy_time += s->ttl_busy;
 }

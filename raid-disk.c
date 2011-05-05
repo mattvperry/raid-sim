@@ -88,8 +88,8 @@ void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
     switch( m->event_type )
     {
         case DISK_FAILURE:
-            time = REPLACE_TIME; //TODO: Make random
-
+            time = tw_rand_normal_sd( lp->rng, REPLACE_TIME, 
+                        STD_DEV * REPLACE_TIME, &(m->rc.rng_calls) );
             // Generate and send messages
             raid_disk_gen_send( s->m_controller, DISK_REPLACED, time, lp );
             raid_disk_gen_send( lp->gid, DISK_REPLACED, time, lp );
@@ -115,15 +115,26 @@ void raid_disk_eventhandler( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 // Reverse Event Handler
 void raid_disk_eventhandler_rc( DiskState* s, tw_bf* cv, MsgData* m, tw_lp* lp )
 {
-    if( m->event_type == DISK_REPLACED )
+    int i;
+    // Check message type
+    switch( m->event_type )
     {
-        tw_rand_reverse_unif( lp->rng );
-        if( cv->c0 )
-            s->num_failures--;
+        case DISK_FAILURE:
+            for( i = 0; i < m->rc.rng_calls; ++i )
+                tw_rand_reverse_unif( lp->rng );
+            break;
+        case DISK_REPLACED:
+            tw_rand_reverse_unif( lp->rng );
+            if( cv->c0 )
+                s->num_failures--;
+            break;
+        default:
+            message_error( m->event_type );
     }
 }
 
 // Finish
 void raid_disk_finish( DiskState* s, tw_lp* lp )
 {
+    g_stats.ttl_disk_failures += s->num_failures;
 }

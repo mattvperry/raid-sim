@@ -16,10 +16,9 @@ void raid_server_calculate_bandwidth( ServerState* s )
 
 long raid_server_num_blocks( ServerState* s, tw_lp* lp )
 {
-    double lambda = ( tw_now( lp ) - s->mode_change_timestamp ) * 
+    double blocks = ( tw_now( lp ) - s->mode_change_timestamp ) * 
         ( s->bandwidth / BLOCK_SIZE );
-    //return tw_rand_poisson( lp->rng, lambda );
-    return (long)lambda;
+    return (long)blocks;
 }
 
 // Initialize
@@ -47,8 +46,8 @@ void raid_server_eventhandler( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* lp 
             s->mode = BUSY; 
             break;
         case REBUILD_START:
-            s->num_controllers_good_health--;
             s->num_controllers_rebuilding++;
+            s->num_controllers_failure--;
             break;
         case REBUILD_FINISH:
             s->num_controllers_good_health++;
@@ -57,6 +56,10 @@ void raid_server_eventhandler( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* lp 
         case RAID_FAILURE:
             s->num_controllers_failure++;
             s->num_controllers_rebuilding--;
+            break;
+        case DISK_FAILURE:
+            s->num_controllers_failure++;
+            s->num_controllers_good_health--;
             break;
         default:
             message_error( m->event_type );
@@ -86,8 +89,8 @@ void raid_server_eventhandler_rc( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* 
             s->mode = IDLE;
             break;
         case REBUILD_START:
-            s->num_controllers_good_health++;
             s->num_controllers_rebuilding--;
+            s->num_controllers_failure++;
             break;
         case REBUILD_FINISH:
             s->num_controllers_good_health--;
@@ -96,6 +99,10 @@ void raid_server_eventhandler_rc( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* 
         case RAID_FAILURE:
             s->num_controllers_failure--;
             s->num_controllers_rebuilding++;
+            break;
+        case DISK_FAILURE:
+            s->num_controllers_failure--;
+            s->num_controllers_good_health++;
             break;
         default:
             message_error( m->event_type );
@@ -116,5 +123,5 @@ void raid_server_eventhandler_rc( ServerState* s, tw_bf* cv, MsgData* m, tw_lp* 
 // Finish
 void raid_server_finish( ServerState* s, tw_lp* lp )
 {
-    printf( "File server %d read/wrote %llu\n", lp->gid, s->num_blocks_wr );
+    g_stats.ttl_blocks_wr += s->num_blocks_wr;
 }

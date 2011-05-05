@@ -21,6 +21,9 @@
 #define DISK_PER_RC 8       // 8 disks per raid controller
 #define LPS_PER_FS ( 1 + FS_PER_IO + CONT_PER_FS + ( DISK_PER_RC * CONT_PER_FS ) )
 
+/* Random */
+#define STD_DEV .10         // Std deviation of random times (10% of mean)
+
 /* IO */
 #define IDLE_TIME 10        // Avg time per idle phase (IO)
 #define BUSY_TIME 100       // Avg time per busy phase (IO)
@@ -43,6 +46,7 @@ typedef struct _controller_state ContState;
 typedef struct _disk_state DiskState;
 typedef struct _rc RC;
 typedef struct _message_data MsgData;
+typedef struct _aggregate_stats Stats;
 typedef enum _event Event;
 typedef enum _io_mode IOMode;
 typedef enum _controller_condition ContCondition;
@@ -116,12 +120,24 @@ struct _rc
     tw_stime server_timestamp;
     long server_blocks;
     ContCondition controller_condition;
+    unsigned int rng_calls;
 };
 
 struct _message_data
 {
     Event event_type;
     RC rc;
+};
+
+/* stats */
+struct _aggregate_stats
+{
+    tw_stime ttl_busy_time;
+    tw_stime ttl_idle_time;
+    unsigned long long ttl_blocks_wr;
+    int ttl_controller_failures;
+    int ttl_controller_rebuilds;
+    int ttl_disk_failures;
 };
 
 
